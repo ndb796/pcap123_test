@@ -77,6 +77,44 @@ char *payload; // 페이로드
 u_int size_ip;
 u_int size_tcp;
 
+void parsing() {
+        printf("------------------------------------------------------\n");
+        int i, payload_len;
+        ethernet = (struct sniff_ethernet*)(packet);
+        printf("MAC 출발지 주소 :");
+        for(i = 0; i < ETHER_ADDR_LEN; i++) {
+                printf("%02x ", ethernet->ether_shost[i]);
+        }
+        printf("\nMAC 목적지 주소 :");
+        for(i = 0; i < ETHER_ADDR_LEN; i++) {
+                printf("%02x ", ethernet->ether_dhost[i]);
+        }
+        printf("\nMAC 목적지 주소 :");
+        for(i = 0; i < ETHER_ADDR_LEN; i++) {
+                printf("%02x ", ethernet->ether_dhost[i]);
+        }
+        ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
+        size_ip = IP_HL(ip)*4;
+        printf("\nIP 출발지 주소: %s\n", inet_ntoa(ip->ip_src));
+        printf("IP 목적지 주소: %s\n", inet_ntoa(ip->ip_dst));
+        tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
+        size_tcp = TH_OFF(tcp)*4;
+        printf("출발지 포트: %d\n", ntohs(tcp->th_sport));
+        printf("목적지 포트: %d\n", ntohs(tcp->th_dport));
+        payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
+        payload_len = ntohs(ip->ip_len) - (size_ip + size_tcp);
+        if(payload_len == 0) printf("페이로드 데이터가 없습니다.");
+        else {
+                printf("< 페이로드 데이터 >\n");
+                for(int i = 1; i < payload_len; i++) {
+                        printf("%02x ", payload[i - 1]);
+                        if(i % 8 == 0) printf("  ");
+                        if(i % 16 == 0) printf("\n");
+                }
+        }
+        printf("\n------------------------------------------------------\n");
+}
+
 int main(void) {
        dev = pcap_lookupdev(errbuf);
         if (dev == NULL) {
@@ -104,6 +142,10 @@ int main(void) {
         if (pcap_setfilter(handle, &fp) == -1) {
                 printf("필터를 세팅할 수 없습니다.\n");
                 return 0;
+        }
+        printf("패킷을 감지합니다.\n");
+        while(pcap_next_ex(handle, &header, &packet) == 1) {
+                parsing();
         }
 	return 0;
 }
