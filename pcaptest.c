@@ -67,6 +67,43 @@ struct sniff_tcp {
         u_short th_urp;
 };
 
+#define SIZE_ETHERNET 14
+
+struct sniff_ethernet *ethernet; // 이더넷 헤더
+struct sniff_ip *ip; // IP 헤더
+struct sniff_tcp *tcp; // TCP 혜더
+char *payload; // 페이로드
+
+u_int size_ip;
+u_int size_tcp;
+
 int main(void) {
+       dev = pcap_lookupdev(errbuf);
+        if (dev == NULL) {
+                printf("네트워크 장치를 찾을 수 없습니다.\n");
+                return 0;
+        }
+        printf("나의 네트워크 장치: %s\n", dev);
+        if (pcap_lookupnet(dev, &net, &mask, errbuf) == -1) {
+                printf("장치의 주소를 찾을 수 없습니다.\n");
+                return 0;
+        }
+        addr.s_addr = net;
+        printf("나의 IP주소: %s\n", inet_ntoa(addr));
+        addr.s_addr = mask;
+        printf("나의 서브넷 마스크: %s\n", inet_ntoa(addr));
+        handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+        if (handle == NULL) {
+                printf("장치를 열 수 없습니다.\n");
+                return 0;
+        }
+        if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
+                printf("필터를 적용할 수 없습니다.\n");
+                return 0;
+        }
+        if (pcap_setfilter(handle, &fp) == -1) {
+                printf("필터를 세팅할 수 없습니다.\n");
+                return 0;
+        }
 	return 0;
 }
